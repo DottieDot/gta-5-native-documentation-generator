@@ -1,9 +1,9 @@
 pub mod model;
 
 use model::{
-  ConstDeclaration, Declaration, EnumDeclaration, EnumField, FunctionDeclaration,
-  FunctionDefinition, FunctionParameter, FunctionParameterType, Literal, LiteralOrConst,
-  NativeDeclaration, NativeTypeDeclaration, StructDeclaration, StructField
+  ConstDeclaration, Declaration, EnumDeclaration, EnumField, Expression, FunctionDeclaration,
+  FunctionDefinition, FunctionParameter, FunctionParameterType, Literal, NativeDeclaration,
+  NativeTypeDeclaration, StructDeclaration, StructField
 };
 
 peg::parser! {
@@ -70,7 +70,7 @@ peg::parser! {
       }
 
     rule const() -> ConstDeclaration
-      = "CONST_" type_name:identifier() _ name:identifier() _ value:literal_or_const() _ comment:comment()? {
+      = "CONST_" type_name:identifier() _ name:identifier() _ value:expression() _ comment:comment()? {
         ConstDeclaration { comment, type_name, name, value }
       }
 
@@ -94,13 +94,13 @@ peg::parser! {
         comment.join("\r\n")
       }
 
-    rule struct_field_array_size() -> LiteralOrConst
-      = "[" size:literal_or_const() "]" {
+    rule struct_field_array_size() -> Expression
+      = "[" size:expression() "]" {
         size
       }
 
-    rule struct_field_default() -> LiteralOrConst
-      = "=" _ default:literal_or_const() {
+    rule struct_field_default() -> Expression
+      = "=" _ default:expression() {
         default
       }
 
@@ -126,7 +126,7 @@ peg::parser! {
           values: content.values
             .into_iter()
             .map(|f| EnumField {
-              value: Some(LiteralOrConst::Literal(Literal::Hash(f.name.clone()))),
+              value: Some(Expression::Literal(Literal::Hash(f.name.clone()))),
               ..f
             }).collect(),
           ..content
@@ -139,7 +139,7 @@ peg::parser! {
       }
 
     rule enum_items() -> Vec<EnumField>
-      = fields:(enum_field() ** (_ (eol() / comment())* _ "," (eol() / comment())* _)) {
+      = fields:(enum_field() ** (_ (comment() / eol())* _ "," (comment() / eol())* _)) {
         fields
       }
 
@@ -153,7 +153,7 @@ peg::parser! {
       }
 
     rule enum_field_with_value() -> EnumField
-      = comment:(i:comment() eol() {i})? name:identifier() _ "=" _ value:literal_or_const() {
+      = comment:(i:comment() eol() {i})? name:identifier() _ "=" _ value:expression() {
         EnumField { comment, name, value: Some(value) }
       }
 
@@ -199,28 +199,29 @@ peg::parser! {
         }
       }
 
-      rule default_function_param_value() -> LiteralOrConst
-        = "=" _ v:literal_or_const() {
-          v
-        }
-
-      rule literal_or_const() -> LiteralOrConst
-        = literal_or_const_literal()
-        / literal_or_const_const()
-
-      rule literal_or_const_const() -> LiteralOrConst
-        = c:identifier() {
-          LiteralOrConst::ConstValue(c)
-        }
-
-    rule literal_or_const_literal() -> LiteralOrConst
-      = v:literal() {
-        LiteralOrConst::Literal(v)
+    rule default_function_param_value() -> Expression
+      = "=" _ v:expression() {
+        v
       }
 
     rule function_param_type() -> String
       = type_name:$(identifier()) {
         type_name.to_owned()
+      }
+
+    rule expression() -> Expression
+      = precedence! {
+        x:(@) _ "+" _ y:@ { Expression::Add(x.into(), y.into()) }
+        x:(@) _ "-" _ y:@ { Expression::Subtract(x.into(), y.into()) }
+        --
+        x:(@) _ "*" _ y:@ { Expression::Multiply(x.into(), y.into()) }
+        x:(@) _ "/" _ y:@ { Expression::Divide(x.into(), y.into()) }
+        --
+        x:(@) _ "|" _ y:@ { Expression::BitOr(x.into(), y.into()) }
+        --
+        literal:literal() { Expression::Literal(literal) }
+        identifier:identifier() { Expression::Identifier(identifier) }
+        "(" _ expr:expression() _ ")" { Expression::Parentheses(expr.into()) }
       }
 
     rule literal() -> Literal

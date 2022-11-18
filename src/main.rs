@@ -7,10 +7,12 @@ use std::{
 use clap::{Parser, ValueHint};
 use peg::{error::ParseError, str::LineCol};
 
-use crate::parser::sch_parser;
+use crate::{json::DocumentRoot, parser::sch_parser};
 
 use self::parser::model::Declaration;
 
+mod crossmap;
+mod json;
 mod parser;
 
 #[derive(clap::Parser, Debug)]
@@ -60,7 +62,7 @@ fn process_files(pattern: String) -> anyhow::Result<Vec<ProcessResult>> {
 fn write_output_to_file(
   output_dir: &str,
   script: &str,
-  decls: Vec<Declaration>
+  decls: &Vec<Declaration>
 ) -> anyhow::Result<()> {
   let path = format!("{output_dir}/{script}.rs");
 
@@ -73,23 +75,46 @@ fn write_output_to_file(
   Ok(())
 }
 
+fn save_natives_json(output_dir: &str, document: DocumentRoot) -> anyhow::Result<()> {
+  let path = format!("{output_dir}/natives.json");
+
+  let mut file = File::create(path)?;
+
+  // file.write_all(format!("{document:#?}").as_bytes())?;
+
+  file.write_all(serde_json::to_string_pretty(&document)?.as_bytes())?;
+
+  Ok(())
+}
+
 fn main() -> anyhow::Result<()> {
   let args = Args::parse();
 
   create_dir_all(&args.output)?;
 
-  for result in process_files(args.sch_files)? {
-    match result {
-      (name, Ok(decls)) => {
-        println!("Parsed {name}");
-        write_output_to_file(&args.output, &name, decls)?;
-        println!("Saved output for {name}");
+  let decls = process_files(args.sch_files)?
+    .into_iter()
+    .filter_map(|result| {
+      match result {
+        (name, Ok(decls)) => {
+          println!("Parsed {name}");
+          write_output_to_file(&args.output, &name, &decls).unwrap();
+          println!("Saved output for {name}");
+          Some(decls)
+        }
+        (name, Err(e)) => {
+          println!("Failed to parse {name}:\r\n{e}");
+          None
+        }
       }
-      (name, Err(e)) => {
-        println!("Failed to parse {name}:\r\n{e}")
-      }
-    }
-  }
+    })
+    .flatten()
+    .collect::<Vec<_>>();
+
+  println!("Generating natives.json");
+
+  let root = DocumentRoot::from(decls);
+  save_natives_json(&args.output, root)?;
 
   Ok(())
 }
