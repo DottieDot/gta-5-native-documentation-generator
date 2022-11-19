@@ -105,10 +105,12 @@ impl From<sch::StructField> for StructField {
 #[serde(tag = "type")]
 pub enum TypeDefinition {
   Enum {
+    #[serde(skip_serializing_if = "Option::is_none")]
     comment: Option<String>,
     values:  IndexMap<String, EnumValue>
   },
   Struct {
+    #[serde(skip_serializing_if = "Option::is_none")]
     comment: Option<String>,
     fields:  IndexMap<String, StructField>
   },

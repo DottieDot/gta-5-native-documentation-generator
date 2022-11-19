@@ -40,7 +40,7 @@ peg::parser! {
       }
 
     rule function() -> FunctionDeclaration
-      = comments:comments() eol()? definition:function_definition() body:$((!("ENDFUNC" / "ENDPROC") v:[_] {v})+) ("ENDFUNC" / "ENDPROC") {
+      = comments:comments() one_eol()? definition:function_definition() body:$((!("ENDFUNC" / "ENDPROC") v:[_] {v})+) ("ENDFUNC" / "ENDPROC") {
         FunctionDeclaration { comments, definition, body: body.to_owned() }
       }
 
@@ -50,7 +50,7 @@ peg::parser! {
       }
 
     rule comments() -> Vec<String>
-      = comments:(comment() ** eol()) {
+      = comments:(comment() ** one_eol()) {
         comments
       }
 
@@ -80,7 +80,7 @@ peg::parser! {
       }
 
     rule struct() -> StructDeclaration
-      = comments:comments() eol()? "STRUCT" _ name:identifier() eol() fields:(struct_field() ** eol()) eol() "ENDSTRUCT" {
+      = comments:comments() one_eol()? "STRUCT" _ name:identifier() eol() fields:(struct_field() ** eol()) eol() "ENDSTRUCT" {
         StructDeclaration { name, fields, comments }
       }
 
@@ -110,17 +110,17 @@ peg::parser! {
       }
 
     rule enum() -> EnumDeclaration
-      = comments:comments() eol()? "ENUM" content:enum_content() "ENDENUM" {
+      = comments:comments() one_eol()? "ENUM" content:enum_content() "ENDENUM" {
         EnumDeclaration { comments, ..content }
       }
 
     rule strict_enum() -> EnumDeclaration
-      = comments:comments() eol()? "STRICT_ENUM" content:enum_content() "ENDENUM" {
+      = comments:comments() one_eol()? "STRICT_ENUM" content:enum_content() "ENDENUM" {
         EnumDeclaration { comments, ..content }
       }
 
     rule hash_enum() -> EnumDeclaration
-      = comments:comments() eol()? "HASH_ENUM" content:enum_content() "ENDENUM" {
+      = comments:comments() one_eol()? "HASH_ENUM" content:enum_content() "ENDENUM" {
         EnumDeclaration {
           comments,
           values: content.values
@@ -163,7 +163,7 @@ peg::parser! {
       }
 
     rule native() -> NativeDeclaration
-      = comments:comments() eol()? "NATIVE" _ function:function_definition() _ "=" _ hash:native_hash() {
+      = comments:comments() one_eol()? "NATIVE" _ function:function_definition() _ "=" _ hash:native_hash() {
         NativeDeclaration { comments: comments, definition: function, native_hash: hash }
       }
 
@@ -311,6 +311,10 @@ peg::parser! {
 
     rule eol()
       = quiet!{['\r' | '\n' | ' ' | '\t']+}
+      / expected!("end of line")
+
+    rule one_eol()
+      = quiet!{"\r"? "\n"}
       / expected!("end of line")
 
     rule eof()

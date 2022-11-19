@@ -76,21 +76,6 @@ impl Display for Expression {
   }
 }
 
-// impl From<Expression> for String {
-//   fn from(value: Expression) -> Self {
-//     match value {
-//       Expression::Literal(l) => l.into(),
-//       Expression::Identifier(i) => i,
-//       Expression::Add(l, r) => format!("{} + {}", *l, *r),
-//       Expression::Subtract(l, r) => format!("{} - {}", *l, *r),
-//       Expression::Multiply(l, r) => format!("{} * {}", *l, *r),
-//       Expression::Divide(l, r) => format!("{} / {}", *l, *r),
-//       Expression::BitOr(l, r) => format!("{} | {}", *l, *r),
-//       Expression::Parentheses(e) => format!("({})", *e)
-//     }
-//   }
-// }
-
 #[derive(Debug)]
 pub struct FunctionParameterType {
   pub base_type: String,
