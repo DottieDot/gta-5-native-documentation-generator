@@ -114,7 +114,12 @@ pub enum TypeDefinition {
     comment: Option<String>,
     fields:  IndexMap<String, StructField>
   },
-  NativeType
+  NativeType {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    comment:   Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    alias_for: Option<String>
+  }
 }
 
 impl From<sch::EnumDeclaration> for TypeDefinition {
@@ -152,8 +157,11 @@ impl From<sch::StructDeclaration> for TypeDefinition {
 }
 
 impl From<sch::NativeTypeDeclaration> for TypeDefinition {
-  fn from(_: sch::NativeTypeDeclaration) -> Self {
-    Self::NativeType
+  fn from(value: sch::NativeTypeDeclaration) -> Self {
+    Self::NativeType {
+      comment:   value.comment,
+      alias_for: value.alias_for
+    }
   }
 }
 

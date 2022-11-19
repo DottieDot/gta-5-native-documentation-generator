@@ -136,7 +136,9 @@ pub struct ConstDeclaration {
 
 #[derive(Debug)]
 pub struct NativeTypeDeclaration {
-  pub name: String
+  pub name:      String,
+  pub alias_for: Option<String>,
+  pub comment:   Option<String>
 }
 
 #[derive(Debug)]

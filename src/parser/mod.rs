@@ -29,8 +29,13 @@ peg::parser! {
       }
 
     rule native_type() -> NativeTypeDeclaration
-      = "NATIVE" _ ident:identifier() {
-        NativeTypeDeclaration { name: ident }
+      = "NATIVE" _ ident:identifier() _ alias:type_alias()? _ comment:comment()? {
+        NativeTypeDeclaration { name: ident, alias_for: alias, comment }
+      }
+
+    rule type_alias() -> String
+      = ":" _ ident:identifier() {
+        ident
       }
 
 
@@ -50,7 +55,7 @@ peg::parser! {
       }
 
     rule comments() -> Vec<String>
-      = comments:(comment() ** one_eol()) {
+      = comments:(comment() ** (one_eol() _)) {
         comments
       }
 
@@ -80,7 +85,7 @@ peg::parser! {
       }
 
     rule struct() -> StructDeclaration
-      = comments:comments() one_eol()? "STRUCT" _ name:identifier() eol() fields:(struct_field() ** eol()) eol() "ENDSTRUCT" {
+      = comments:comments() one_eol()? _ "STRUCT" _ name:identifier() eol() fields:(struct_field() ** eol()) eol() "ENDSTRUCT" {
         StructDeclaration { name, fields, comments }
       }
 
@@ -110,17 +115,17 @@ peg::parser! {
       }
 
     rule enum() -> EnumDeclaration
-      = comments:comments() one_eol()? "ENUM" content:enum_content() "ENDENUM" {
+      = comments:comments() one_eol()? _ "ENUM" content:enum_content() "ENDENUM" {
         EnumDeclaration { comments, ..content }
       }
 
     rule strict_enum() -> EnumDeclaration
-      = comments:comments() one_eol()? "STRICT_ENUM" content:enum_content() "ENDENUM" {
+      = comments:comments() one_eol()? _ "STRICT_ENUM" content:enum_content() "ENDENUM" {
         EnumDeclaration { comments, ..content }
       }
 
     rule hash_enum() -> EnumDeclaration
-      = comments:comments() one_eol()? "HASH_ENUM" content:enum_content() "ENDENUM" {
+      = comments:comments() one_eol()? _ "HASH_ENUM" content:enum_content() "ENDENUM" {
         EnumDeclaration {
           comments,
           values: content.values
@@ -182,8 +187,13 @@ peg::parser! {
       }
 
     rule function_params() -> Vec<FunctionParameter>
-      = "(" _ params:(function_param() ** (eol()? _ "," _ eol()?)) _ ")" {
+      = "(" _ params:((function_param() / function_param_varargs()) ** (eol()? _ "," _ eol()?)) _ ")" {
         params
+      }
+
+    rule function_param_varargs() -> FunctionParameter
+      = varargs:varargs() {
+        FunctionParameter { name: varargs.clone(), type_: FunctionParameterType { base_type: varargs, is_ref: false, is_array: false }, default_value: None }
       }
 
     rule function_param() -> FunctionParameter
@@ -275,6 +285,12 @@ peg::parser! {
         ? n.parse().or(Err("i32"))
       }}
       / expected!("integer")
+
+    rule varargs() -> String
+      = quiet!{ s:$("VARARGS" ['0'..='9']?) {
+        s.to_owned()
+      } }
+      / expected!("varags")
 
     rule native_hash() -> u64
       = quiet!{ "\"0x" n:$(['0'..='9' | 'a'..='f' | 'A'..='F']+) "\"" {

@@ -97,9 +97,9 @@ fn main() -> anyhow::Result<()> {
     .filter_map(|result| {
       match result {
         (name, Ok(decls)) => {
-          println!("Parsed {name}");
-          write_output_to_file(&args.output, &name, &decls).unwrap();
-          println!("Saved output for {name}");
+          // println!("Parsed {name}");
+          // write_output_to_file(&args.output, &name, &decls).unwrap();
+          // println!("Saved output for {name}");
           Some(decls)
         }
         (name, Err(e)) => {
