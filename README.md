@@ -4,6 +4,9 @@ Generates a natives.json from script files that can be loaded as a special.json 
 
 Stuff like multi line comments (`/* ... */`) and preprocessor statements (like `#IF`) have to be manually removed.
 
+## Prerequisites
+- The rust toolchain https://www.rust-lang.org/tools/install
+- `cargo` added to path (should be done automatically after installing ^)
 
 ## Installation
 
