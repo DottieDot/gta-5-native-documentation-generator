@@ -5,9 +5,10 @@ use std::{
 };
 
 use clap::{Parser, ValueHint};
+use nativedocgen_model::DocumentRoot;
 use peg::{error::ParseError, str::LineCol};
 
-use crate::{json::DocumentRoot, parser::sch_parser};
+use crate::{json::to_document_root, parser::sch_parser};
 
 use self::parser::model::Declaration;
 
@@ -59,28 +60,10 @@ fn process_files(pattern: String) -> anyhow::Result<Vec<ProcessResult>> {
   Ok(result)
 }
 
-fn write_output_to_file(
-  output_dir: &str,
-  script: &str,
-  decls: &Vec<Declaration>
-) -> anyhow::Result<()> {
-  let path = format!("{output_dir}/{script}.rs");
-
-  println!("Writing to {path}");
-
-  let mut file = File::create(path)?;
-
-  file.write_all(format!("{decls:#?}").as_bytes())?;
-
-  Ok(())
-}
-
 fn save_natives_json(output_dir: &str, document: DocumentRoot) -> anyhow::Result<()> {
   let path = format!("{output_dir}/natives.json");
 
   let mut file = File::create(path)?;
-
-  // file.write_all(format!("{document:#?}").as_bytes())?;
 
   file.write_all(serde_json::to_string_pretty(&document)?.as_bytes())?;
 
@@ -96,12 +79,7 @@ fn main() -> anyhow::Result<()> {
     .into_iter()
     .filter_map(|result| {
       match result {
-        (name, Ok(decls)) => {
-          // println!("Parsed {name}");
-          // write_output_to_file(&args.output, &name, &decls).unwrap();
-          // println!("Saved output for {name}");
-          Some(decls)
-        }
+        (_, Ok(decls)) => Some(decls),
         (name, Err(e)) => {
           println!("Failed to parse {name}:\r\n{e}");
           None
@@ -113,7 +91,7 @@ fn main() -> anyhow::Result<()> {
 
   println!("Generating natives.json");
 
-  let root = DocumentRoot::from(decls);
+  let root = to_document_root(decls);
   save_natives_json(&args.output, root)?;
 
   Ok(())
