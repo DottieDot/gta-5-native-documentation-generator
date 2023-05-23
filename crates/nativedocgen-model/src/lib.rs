@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct NativeParam {
   #[serde(rename = "type")]
   pub ty:      String,
@@ -12,7 +12,7 @@ pub struct NativeParam {
   pub default: Option<String>
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Native {
   pub name:        String,
   #[serde(skip_serializing_if = "Option::is_none")]
@@ -21,13 +21,13 @@ pub struct Native {
   pub return_type: String
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Namespace {
   #[serde(flatten)]
   pub natives: HashMap<u64, Native>
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct EnumValue {
   #[serde(skip_serializing_if = "Option::is_none")]
   pub comment: Option<String>,
@@ -35,7 +35,7 @@ pub struct EnumValue {
   pub value:   Option<String>
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct StructField {
   #[serde(skip_serializing_if = "Option::is_none")]
   pub comment:       Option<String>,
@@ -46,7 +46,7 @@ pub struct StructField {
   pub default_value: Option<String>
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "type")]
 pub enum TypeDefinition {
   Enum {
@@ -67,7 +67,7 @@ pub enum TypeDefinition {
   }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ConstDefinition {
   #[serde(skip_serializing_if = "Option::is_none")]
   pub comment:   Option<String>,
@@ -75,7 +75,7 @@ pub struct ConstDefinition {
   pub value:     String
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct DocumentRoot {
   pub types:     IndexMap<String, TypeDefinition>,
   pub constants: IndexMap<String, ConstDefinition>,
